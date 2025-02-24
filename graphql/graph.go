@@ -1,61 +1,67 @@
 package main
 
-import "github.com/99designs/gqlgen/graphql"
+import (
+	"github.com/99designs/gqlgen/graphql"
+	"github.com/yash96621/go-grpc-graphql-microservice/account"
+	"github.com/yash96621/go-grpc-graphql-microservice/catalog"
+	"github.com/yash96621/go-grpc-graphql-microservice/order"
+)
 
 type Server struct {
-	// accountClient *account.Client
-	// catalogClient *catalog.Client
-	// orderClient   *order.Client
+	accountClient *account.Client
+	catalogClient *catalog.Client
+	orderClient   *order.Client
 }
 
-func NewGraphQlServer(accountUrl, catalogUrl, orderUrl string) (*Server, error) {
-	// accountClient, err := account.NewClient(accountUrl)
-	// if err != nil {
-	// 	return nil, err
-	// }
+func NewGraphQLServer(accountUrl, catalogURL, orderURL string) (*Server, error) {
+	// Connect to account service
+	accountClient, err := account.NewClient(accountUrl)
+	if err != nil {
+		return nil, err
+	}
 
-	// catalogClient, err := catalog.NewClient(catalogUrl)
-	// if err != nil {
-	// 	accountClient.Close()
+	// Connect to product service
+	catalogClient, err := catalog.NewClient(catalogURL)
+	if err != nil {
+		accountClient.Close()
+		return nil, err
+	}
 
-	// 	return nil, err
-	// }
-	// orderClient, err := order.NewClient(orderUrl)
-	// if err != nil {
-	// 	accountClient.Close()
-	// 	catalogClient.Close()
-	// 	return nil, err
-	// }
+	// Connect to order service
+	orderClient, err := order.NewClient(orderURL)
+	if err != nil {
+		accountClient.Close()
+		catalogClient.Close()
+		return nil, err
+	}
 
 	return &Server{
-		// accountClient,
-		// catalogClient,
-		// orderClient,
+		accountClient,
+		catalogClient,
+		orderClient,
 	}, nil
 }
 
-func (s *Server) Mutation() *mutationResolver {
+func (s *Server) Mutation() MutationResolver {
 	return &mutationResolver{
 		server: s,
 	}
 }
 
-func (s *Server) Query() *queryResolver {
+func (s *Server) Query() QueryResolver {
 	return &queryResolver{
 		server: s,
 	}
 }
 
-func (s *Server) Account() *AccountResolver {
-	return &AccountResolver{
+func (s *Server) Account() AccountResolver {
+	return &accountResolver{
 		server: s,
 	}
 }
 
 func (s *Server) ToExecutableSchema() graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: &Resolver{
-			server: s,
-		},
+		Resolvers: s,
 	})
 }
